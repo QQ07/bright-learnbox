@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, Mail, Lock, GithubIcon, Google } from 'lucide-react';
+import { ArrowRight, Mail, Lock, GithubIcon, Globe } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
 const Auth = () => {
@@ -150,7 +150,7 @@ const Auth = () => {
                       onClick={() => handleSocialAuth('Google')}
                       disabled={isLoading}
                     >
-                      <Google className="mr-2 h-4 w-4" />
+                      <Globe className="mr-2 h-4 w-4" />
                       Google
                     </Button>
                     <Button
@@ -241,7 +241,7 @@ const Auth = () => {
                       onClick={() => handleSocialAuth('Google')}
                       disabled={isLoading}
                     >
-                      <Google className="mr-2 h-4 w-4" />
+                      <Globe className="mr-2 h-4 w-4" />
                       Google
                     </Button>
                     <Button

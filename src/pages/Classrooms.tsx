@@ -10,20 +10,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Plus, Users, FolderPlus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
+// Define TypeScript interfaces for our classroom types
+interface TeacherClassroom {
+  id: string;
+  name: string;
+  code: string;
+  students: number;
+  materials: number;
+}
+
+interface StudentClassroom {
+  id: string;
+  name: string;
+  code: string;
+  teacher: string;
+  materials: number;
+}
+
 // Mock data
-const mockTeacherClassrooms = [
+const mockTeacherClassrooms: TeacherClassroom[] = [
   { id: '1', name: 'Biology 101', code: 'BIO101', students: 24, materials: 8 },
   { id: '2', name: 'Physics Advanced', code: 'PHY202', students: 18, materials: 12 },
 ];
 
-const mockStudentClassrooms = [
+const mockStudentClassrooms: StudentClassroom[] = [
   { id: '1', name: 'Chemistry Basics', code: 'CHEM101', teacher: 'Dr. Smith', materials: 5 },
   { id: '2', name: 'Mathematics 101', code: 'MATH101', teacher: 'Prof. Johnson', materials: 7 },
 ];
 
 const Classrooms = () => {
   const [isTeacher, setIsTeacher] = useState(true); // Toggle between teacher/student view for demo
-  const [classrooms, setClassrooms] = useState(isTeacher ? mockTeacherClassrooms : mockStudentClassrooms);
+  const [classrooms, setClassrooms] = useState<TeacherClassroom[] | StudentClassroom[]>(
+    isTeacher ? mockTeacherClassrooms : mockStudentClassrooms
+  );
   const [newClassroom, setNewClassroom] = useState({ name: '' });
   const [joinCode, setJoinCode] = useState('');
   const { toast } = useToast();
@@ -47,7 +66,7 @@ const Classrooms = () => {
     // Generate a random 6-character classroom code
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     
-    const classroom = {
+    const classroom: TeacherClassroom = {
       id: Date.now().toString(),
       name: newClassroom.name,
       code: code,
@@ -55,7 +74,7 @@ const Classrooms = () => {
       materials: 0
     };
     
-    setClassrooms([classroom, ...classrooms]);
+    setClassrooms([classroom, ...classrooms] as (TeacherClassroom[] | StudentClassroom[]));
     setNewClassroom({ name: '' });
     
     toast({
@@ -87,7 +106,7 @@ const Classrooms = () => {
     }
     
     // In a real app, this would verify the code exists
-    const classroom = {
+    const classroom: StudentClassroom = {
       id: Date.now().toString(),
       name: `Class ${joinCode}`,
       code: joinCode,
@@ -95,7 +114,7 @@ const Classrooms = () => {
       materials: 0
     };
     
-    setClassrooms([classroom, ...classrooms]);
+    setClassrooms([classroom, ...classrooms] as (TeacherClassroom[] | StudentClassroom[]));
     setJoinCode('');
     
     toast({
@@ -198,8 +217,8 @@ const Classrooms = () => {
                       </div>
                       <CardDescription>
                         {isTeacher 
-                          ? `${classroom.students} students enrolled` 
-                          : `Teacher: ${classroom.teacher}`
+                          ? `${(classroom as TeacherClassroom).students} students enrolled` 
+                          : `Teacher: ${(classroom as StudentClassroom).teacher}`
                         }
                       </CardDescription>
                     </CardHeader>
@@ -211,7 +230,7 @@ const Classrooms = () => {
                       {isTeacher && (
                         <div className="flex items-center text-sm text-muted-foreground mt-1">
                           <Users className="mr-1 h-4 w-4" />
-                          <span>{classroom.students} students</span>
+                          <span>{(classroom as TeacherClassroom).students} students</span>
                         </div>
                       )}
                     </CardContent>
