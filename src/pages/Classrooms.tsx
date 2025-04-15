@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Plus, Users, FolderPlus } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { api } from '@/services/api';
 
 // Define TypeScript interfaces for our classroom types
 interface TeacherClassroom {
@@ -40,20 +40,36 @@ const mockStudentClassrooms: StudentClassroom[] = [
 
 const Classrooms = () => {
   const [isTeacher, setIsTeacher] = useState(true); // Toggle between teacher/student view for demo
-  const [classrooms, setClassrooms] = useState<TeacherClassroom[] | StudentClassroom[]>(
-    isTeacher ? mockTeacherClassrooms : mockStudentClassrooms
-  );
+  const [classrooms, setClassrooms] = useState<TeacherClassroom[] | StudentClassroom[]>([]);
   const [newClassroom, setNewClassroom] = useState({ name: '' });
   const [joinCode, setJoinCode] = useState('');
   const { toast } = useToast();
   
+  useEffect(() => {
+    const fetchClassrooms = async () => {
+      try {
+        const classroomsData = await api.classroom.getAll(isTeacher ? 'mentor' : 'learner');
+        setClassrooms(classroomsData as TeacherClassroom[] | StudentClassroom[]);
+      } catch (error) {
+        console.error("Failed to fetch classrooms:", error);
+        toast({
+          title: "Failed to fetch classrooms",
+          description: "There was an error fetching your classrooms. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchClassrooms();
+  }, [isTeacher]);
+  
   // Toggle role for demo purposes
   const toggleRole = () => {
     setIsTeacher(!isTeacher);
-    setClassrooms(!isTeacher ? mockTeacherClassrooms : mockStudentClassrooms);
+    setClassrooms([]);
   };
   
-  const handleCreateClassroom = () => {
+  const handleCreateClassroom = async () => {
     if (!newClassroom.name.trim()) {
       toast({
         title: "Missing information",
@@ -63,27 +79,26 @@ const Classrooms = () => {
       return;
     }
     
-    // Generate a random 6-character classroom code
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    
-    const classroom: TeacherClassroom = {
-      id: Date.now().toString(),
-      name: newClassroom.name,
-      code: code,
-      students: 0,
-      materials: 0
-    };
-    
-    setClassrooms([classroom, ...classrooms] as (TeacherClassroom[] | StudentClassroom[]));
-    setNewClassroom({ name: '' });
-    
-    toast({
-      title: "Classroom created",
-      description: `Your new classroom "${classroom.name}" has been created with code: ${code}`,
-    });
+    try {
+      await api.classroom.create(newClassroom.name);
+      const updatedClassrooms = await api.classroom.getAll('mentor');
+      setClassrooms(updatedClassrooms as TeacherClassroom[]);
+      setNewClassroom({ name: '' });
+      
+      toast({
+        title: "Classroom created",
+        description: `Your new classroom "${newClassroom.name}" has been created`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error creating classroom",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleJoinClassroom = () => {
+  const handleJoinClassroom = async () => {
     if (!joinCode.trim()) {
       toast({
         title: "Missing information",
@@ -93,34 +108,23 @@ const Classrooms = () => {
       return;
     }
     
-    // Check if already joined (in a real app, this would check against a database)
-    const alreadyJoined = mockStudentClassrooms.some(c => c.code === joinCode);
-    
-    if (alreadyJoined) {
+    try {
+      await api.classroom.join(joinCode);
+      const updatedClassrooms = await api.classroom.getAll('learner');
+      setClassrooms(updatedClassrooms as StudentClassroom[]);
+      setJoinCode('');
+      
       toast({
-        title: "Already joined",
-        description: "You have already joined this classroom",
+        title: "Classroom joined",
+        description: "You have successfully joined the classroom",
+      });
+    } catch (error) {
+      toast({
+        title: "Error joining classroom",
+        description: "Please check the classroom code and try again",
         variant: "destructive",
       });
-      return;
     }
-    
-    // In a real app, this would verify the code exists
-    const classroom: StudentClassroom = {
-      id: Date.now().toString(),
-      name: `Class ${joinCode}`,
-      code: joinCode,
-      teacher: 'Unknown Teacher',
-      materials: 0
-    };
-    
-    setClassrooms([classroom, ...classrooms] as (TeacherClassroom[] | StudentClassroom[]));
-    setJoinCode('');
-    
-    toast({
-      title: "Classroom joined",
-      description: `You have successfully joined the classroom`,
-    });
   };
   
   return (

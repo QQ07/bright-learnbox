@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Mail, Lock, GithubIcon, Globe } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { api } from '@/services/api';
 
 const Auth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -27,27 +27,49 @@ const Auth = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate authentication delay
-    setTimeout(() => {
-      if (type === 'signup' && authValues.password !== authValues.confirmPassword) {
-        toast({
-          title: "Passwords don't match",
-          description: "Please ensure your passwords match",
-          variant: "destructive",
+    try {
+      if (type === 'signup') {
+        if (authValues.password !== authValues.confirmPassword) {
+          toast({
+            title: "Passwords don't match",
+            description: "Please ensure your passwords match",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        await api.auth.signup('learner', {
+          email: authValues.email,
+          password: authValues.password,
+          name: authValues.email.split('@')[0], // Using email username as name for demo
+          dob: '2000-01-01', // Default values for demo
+          gender: 'Other',
+          phone: '0000000000',
+          role: 'LEARNER',
         });
-        setIsLoading(false);
-        return;
+      } else {
+        await api.auth.login('learner', {
+          email: authValues.email,
+          password: authValues.password,
+        });
       }
 
-      // Success flow
       toast({
         title: type === 'signin' ? "Signed in successfully" : "Account created successfully",
-        description: "Welcome to LearnBox",
+        description: "Welcome to Learnspace",
       });
       
       setIsAuthenticated(true);
+    } catch (error) {
+      toast({
+        title: "Authentication failed",
+        description: "Please check your credentials and try again",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,7 +86,7 @@ const Auth = () => {
     setTimeout(() => {
       toast({
         title: `Signed in with ${provider}`,
-        description: "Welcome to LearnBox",
+        description: "Welcome to Learnspace",
       });
       
       setIsAuthenticated(true);
@@ -79,7 +101,7 @@ const Auth = () => {
           <div className="bg-primary/20 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4">
             <span className="text-primary font-bold text-3xl">L</span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">LearnBox</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Learnspace</h1>
           <p className="text-muted-foreground">A better way to learn and teach</p>
         </div>
 
@@ -94,7 +116,7 @@ const Auth = () => {
               <form onSubmit={(e) => handleSubmit(e, 'signin')}>
                 <CardHeader>
                   <CardTitle>Welcome Back</CardTitle>
-                  <CardDescription>Sign in to your LearnBox account</CardDescription>
+                  <CardDescription>Sign in to your Learnspace account</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -171,7 +193,7 @@ const Auth = () => {
               <form onSubmit={(e) => handleSubmit(e, 'signup')}>
                 <CardHeader>
                   <CardTitle>Create an Account</CardTitle>
-                  <CardDescription>Sign up for a new LearnBox account</CardDescription>
+                  <CardDescription>Sign up for a new Learnspace account</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -261,7 +283,7 @@ const Auth = () => {
         </Tabs>
         
         <p className="text-center text-xs text-muted-foreground mt-8">
-          By continuing, you agree to LearnBox's Terms of Service and Privacy Policy
+          By continuing, you agree to Learnspace's Terms of Service and Privacy Policy
         </p>
       </div>
     </div>
