@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, Mail, Lock, Globe, GithubIcon, Phone, Calendar, User } from 'lucide-react';
+import { ArrowRight, Mail, Lock, Phone, Calendar, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { api, SignupData } from '@/services/api';
 import { 
@@ -20,6 +20,11 @@ import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
+// Extend SignupData for frontend validation purposes only
+interface ExtendedSignupData extends SignupData {
+  confirmPassword: string;
+}
+
 const Auth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +33,7 @@ const Auth = () => {
     email: '',
     password: '',
   });
-  const [signupValues, setSignupValues] = useState<SignupData>({
+  const [signupValues, setSignupValues] = useState<ExtendedSignupData>({
     name: '',
     email: '',
     password: '',
@@ -134,21 +139,6 @@ const Auth = () => {
     }
   };
 
-  const handleSocialAuth = (provider: string) => {
-    setIsLoading(true);
-    
-    // Simulate authentication delay
-    setTimeout(() => {
-      toast({
-        title: `Signed in with ${provider}`,
-        description: "Welcome to Learnspace",
-      });
-      
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    }, 1000);
-  };
-
   const handleRoleChange = (selectedRole: 'learner' | 'mentor') => {
     setRole(selectedRole);
     setSignupValues({
@@ -238,36 +228,6 @@ const Auth = () => {
                     {isLoading ? "Signing in..." : "Sign In"}
                     {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
-                  
-                  <div className="relative my-4">
-                    <Separator className="absolute inset-0 m-auto" />
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => handleSocialAuth('Google')}
-                      disabled={isLoading}
-                    >
-                      <Globe className="mr-2 h-4 w-4" />
-                      Google
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => handleSocialAuth('GitHub')}
-                      disabled={isLoading}
-                    >
-                      <GithubIcon className="mr-2 h-4 w-4" />
-                      GitHub
-                    </Button>
-                  </div>
                 </CardContent>
               </form>
             </TabsContent>
@@ -413,36 +373,6 @@ const Auth = () => {
                     {isLoading ? "Creating Account..." : "Create Account"}
                     {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
-                  
-                  <div className="relative my-4">
-                    <Separator className="absolute inset-0 m-auto" />
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        Or continue with
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => handleSocialAuth('Google')}
-                      disabled={isLoading}
-                    >
-                      <Globe className="mr-2 h-4 w-4" />
-                      Google
-                    </Button>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => handleSocialAuth('GitHub')}
-                      disabled={isLoading}
-                    >
-                      <GithubIcon className="mr-2 h-4 w-4" />
-                      GitHub
-                    </Button>
-                  </div>
                 </CardContent>
               </form>
             </TabsContent>
