@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -5,58 +6,58 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, Mail, Lock, GithubIcon, Globe } from 'lucide-react';
+import { ArrowRight, Mail, Lock, Globe, GithubIcon, Phone, Calendar, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { api } from '@/services/api';
+import { api, SignupData } from '@/services/api';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { format } from 'date-fns';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const Auth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [authValues, setAuthValues] = useState({
+  const [role, setRole] = useState<'learner' | 'mentor'>('learner');
+  const [loginValues, setLoginValues] = useState({
+    email: '',
+    password: '',
+  });
+  const [signupValues, setSignupValues] = useState<SignupData>({
+    name: '',
     email: '',
     password: '',
     confirmPassword: '',
+    dob: format(new Date(), 'yyyy-MM-dd'),
+    gender: 'Other',
+    phone: '',
+    role: 'LEARNER',
   });
+  const [date, setDate] = useState<Date>(new Date());
+  
   const { toast } = useToast();
 
   if (isAuthenticated) {
     return <Navigate to="/self-space" replace />;
   }
 
-  const handleSubmit = async (e: React.FormEvent, type: 'signin' | 'signup') => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      if (type === 'signup') {
-        if (authValues.password !== authValues.confirmPassword) {
-          toast({
-            title: "Passwords don't match",
-            description: "Please ensure your passwords match",
-            variant: "destructive",
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        await api.auth.signup('learner', {
-          email: authValues.email,
-          password: authValues.password,
-          name: authValues.email.split('@')[0], // Using email username as name for demo
-          dob: '2000-01-01', // Default values for demo
-          gender: 'Other',
-          phone: '0000000000',
-          role: 'LEARNER',
-        });
-      } else {
-        await api.auth.login('learner', {
-          email: authValues.email,
-          password: authValues.password,
-        });
-      }
+      await api.auth.login(role, {
+        email: loginValues.email,
+        password: loginValues.password,
+      });
 
       toast({
-        title: type === 'signin' ? "Signed in successfully" : "Account created successfully",
+        title: "Signed in successfully",
         description: "Welcome to Learnspace",
       });
       
@@ -72,11 +73,65 @@ const Auth = () => {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAuthValues({
-      ...authValues,
+  const handleSignupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (signupValues.password !== signupValues.confirmPassword) {
+        toast({
+          title: "Passwords don't match",
+          description: "Please ensure your passwords match",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Remove the confirmPassword field before sending the request
+      const { confirmPassword, ...signupData } = signupValues;
+      
+      await api.auth.signup(role, signupData);
+
+      toast({
+        title: "Account created successfully",
+        description: "Welcome to Learnspace",
+      });
+      
+      setIsAuthenticated(true);
+    } catch (error) {
+      toast({
+        title: "Registration failed",
+        description: "Please check your details and try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLoginValues({
+      ...loginValues,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleSignupChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSignupValues({
+      ...signupValues,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleDateChange = (selectedDate: Date | undefined) => {
+    if (selectedDate) {
+      setDate(selectedDate);
+      setSignupValues({
+        ...signupValues,
+        dob: format(selectedDate, 'yyyy-MM-dd'),
+      });
+    }
   };
 
   const handleSocialAuth = (provider: string) => {
@@ -92,6 +147,21 @@ const Auth = () => {
       setIsAuthenticated(true);
       setIsLoading(false);
     }, 1000);
+  };
+
+  const handleRoleChange = (selectedRole: 'learner' | 'mentor') => {
+    setRole(selectedRole);
+    setSignupValues({
+      ...signupValues,
+      role: selectedRole === 'learner' ? 'LEARNER' : 'MENTOR'
+    });
+  };
+
+  const handleGenderChange = (selectedGender: string) => {
+    setSignupValues({
+      ...signupValues,
+      gender: selectedGender
+    });
   };
 
   return (
@@ -113,7 +183,7 @@ const Auth = () => {
           
           <Card className="animate-scale-in">
             <TabsContent value="signin">
-              <form onSubmit={(e) => handleSubmit(e, 'signin')}>
+              <form onSubmit={handleLoginSubmit}>
                 <CardHeader>
                   <CardTitle>Welcome Back</CardTitle>
                   <CardDescription>Sign in to your Learnspace account</CardDescription>
@@ -126,8 +196,8 @@ const Auth = () => {
                         name="email"
                         type="email"
                         placeholder="Email"
-                        value={authValues.email}
-                        onChange={handleChange}
+                        value={loginValues.email}
+                        onChange={handleLoginChange}
                         className="pl-10"
                         required
                       />
@@ -140,13 +210,26 @@ const Auth = () => {
                         name="password"
                         type="password"
                         placeholder="Password"
-                        value={authValues.password}
-                        onChange={handleChange}
+                        value={loginValues.password}
+                        onChange={handleLoginChange}
                         className="pl-10"
                         required
                       />
                     </div>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Select value={role} onValueChange={(value) => setRole(value as 'learner' | 'mentor')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="learner">Learner</SelectItem>
+                        <SelectItem value="mentor">Mentor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <Button 
                     type="submit" 
                     className="w-full" 
@@ -190,7 +273,7 @@ const Auth = () => {
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={(e) => handleSubmit(e, 'signup')}>
+              <form onSubmit={handleSignupSubmit}>
                 <CardHeader>
                   <CardTitle>Create an Account</CardTitle>
                   <CardDescription>Sign up for a new Learnspace account</CardDescription>
@@ -198,18 +281,88 @@ const Auth = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
-                        name="email"
-                        type="email"
-                        placeholder="Email"
-                        value={authValues.email}
-                        onChange={handleChange}
+                        name="name"
+                        type="text"
+                        placeholder="Full Name"
+                        value={signupValues.name}
+                        onChange={handleSignupChange}
                         className="pl-10"
                         required
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        name="email"
+                        type="email"
+                        placeholder="Email"
+                        value={signupValues.email}
+                        onChange={handleSignupChange}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        name="phone"
+                        type="tel"
+                        placeholder="Phone Number"
+                        value={signupValues.phone}
+                        onChange={handleSignupChange}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full pl-3 text-left font-normal flex justify-between"
+                        >
+                          <div className="flex items-center">
+                            <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                            {date ? format(date, "PPP") : <span>Pick a date</span>}
+                          </div>
+                          <Calendar className="h-4 w-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={date}
+                          onSelect={handleDateChange}
+                          initialFocus
+                          disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Select value={signupValues.gender} onValueChange={handleGenderChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <div className="space-y-2">
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -217,13 +370,14 @@ const Auth = () => {
                         name="password"
                         type="password"
                         placeholder="Password"
-                        value={authValues.password}
-                        onChange={handleChange}
+                        value={signupValues.password}
+                        onChange={handleSignupChange}
                         className="pl-10"
                         required
                       />
                     </div>
                   </div>
+
                   <div className="space-y-2">
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -231,13 +385,26 @@ const Auth = () => {
                         name="confirmPassword"
                         type="password"
                         placeholder="Confirm Password"
-                        value={authValues.confirmPassword}
-                        onChange={handleChange}
+                        value={signupValues.confirmPassword}
+                        onChange={handleSignupChange}
                         className="pl-10"
                         required
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <Select value={role} onValueChange={(value) => handleRoleChange(value as 'learner' | 'mentor')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="learner">Learner</SelectItem>
+                        <SelectItem value="mentor">Mentor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   <Button 
                     type="submit" 
                     className="w-full" 

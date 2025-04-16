@@ -16,6 +16,23 @@ export interface SignupData {
   role: 'MENTOR' | 'LEARNER';
 }
 
+export interface ClassroomDTO {
+  classroomId: number;
+  classroomName: string;
+  classroomCode: string;
+  fileNames: string[];
+  learnerEmails: string[];
+}
+
+export interface FileDTO {
+  fileId: number;
+  fileName: string;
+  fileType: string;
+  fileData?: any[];
+  classroomId: number;
+  uploadedById: number;
+}
+
 export const api = {
   auth: {
     login: async (role: 'mentor' | 'learner', credentials: LoginCredentials) => {
@@ -34,16 +51,26 @@ export const api = {
       });
       return response.json();
     },
+    logout: async (role: 'mentor' | 'learner') => {
+      const response = await fetch(`${API_URL}/${role}/logout`, {
+        method: 'POST',
+      });
+      return response.json();
+    },
   },
   classroom: {
     create: async (classroomName: string) => {
-      const response = await fetch(`${API_URL}/mentor/createClassroom?classroomName=${classroomName}`, {
+      const response = await fetch(`${API_URL}/mentor/createClassroom?classroomName=${encodeURIComponent(classroomName)}`, {
         method: 'POST',
       });
       return response.json();
     },
     getAll: async (role: 'mentor' | 'learner') => {
       const response = await fetch(`${API_URL}/${role}/myClassrooms`);
+      return response.json();
+    },
+    getById: async (role: 'mentor' | 'learner', classroomId: string) => {
+      const response = await fetch(`${API_URL}/${role}/classrooms/${classroomId}`);
       return response.json();
     },
     join: async (code: string) => {
@@ -54,6 +81,18 @@ export const api = {
     },
     delete: async (id: string) => {
       const response = await fetch(`${API_URL}/mentor/deleteClassroom/${id}`, {
+        method: 'DELETE',
+      });
+      return response.json();
+    },
+    update: async (id: string, newName: string) => {
+      const response = await fetch(`${API_URL}/mentor/updateClassroom/${id}?newName=${encodeURIComponent(newName)}`, {
+        method: 'PUT',
+      });
+      return response.json();
+    },
+    leave: async (id: string) => {
+      const response = await fetch(`${API_URL}/learner/leaveClassroom/${id}`, {
         method: 'DELETE',
       });
       return response.json();
@@ -83,6 +122,20 @@ export const api = {
       const response = await fetch(`${API_URL}/mentor/classroom/files/delete/${fileId}`, {
         method: 'DELETE',
       });
+      return response.json();
+    },
+    deleteAll: async (classroomId: string) => {
+      const response = await fetch(`${API_URL}/mentor/classroom/files/delete-all/${classroomId}`, {
+        method: 'DELETE',
+      });
+      return response.json();
+    },
+    getMetadata: async (fileId: string) => {
+      const response = await fetch(`${API_URL}/learner/files/metadata/${fileId}`);
+      return response.json();
+    },
+    preview: async (fileId: string) => {
+      const response = await fetch(`${API_URL}/learner/files/preview/${fileId}`);
       return response.json();
     },
   },
