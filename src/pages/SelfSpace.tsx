@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,8 +13,8 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/use-toast';
+import { PdfNotesUploader } from '@/components/notes/PdfNotesUploader';
 
-// Mock data for demonstration
 const mockFiles = [
   { id: '1', name: 'Biology notes.pdf', type: 'pdf', size: '1.2 MB', date: '2023-10-15' },
   { id: '2', name: 'Physics formulas.docx', type: 'doc', size: '0.5 MB', date: '2023-10-10' },
@@ -37,7 +36,6 @@ const SelfSpace = () => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       
-      // Check file size (2MB limit)
       if (file.size > 2 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -47,7 +45,6 @@ const SelfSpace = () => {
         return;
       }
       
-      // Process file (in a real app, this would involve uploading to server)
       const newFile = {
         id: Date.now().toString(),
         name: file.name,
@@ -107,7 +104,6 @@ const SelfSpace = () => {
     });
   };
   
-  // Helper function to get icon based on file type
   const getFileIcon = (type: string) => {
     switch(type) {
       case 'pdf':
@@ -138,7 +134,6 @@ const SelfSpace = () => {
         
         <TabsContent value="files" className="animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Upload Card */}
             <Card className="col-span-1 animate-fade-in">
               <CardHeader>
                 <CardTitle>Upload Files</CardTitle>
@@ -171,7 +166,6 @@ const SelfSpace = () => {
               </CardContent>
             </Card>
             
-            {/* Files List */}
             <Card className="md:col-span-2 animate-fade-in">
               <CardHeader>
                 <CardTitle>Your Files</CardTitle>
@@ -234,12 +228,11 @@ const SelfSpace = () => {
         
         <TabsContent value="notes" className="animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Create Note Card */}
             <Card className="col-span-1 animate-fade-in">
               <CardHeader>
                 <CardTitle>Create Note</CardTitle>
                 <CardDescription>
-                  Add a new personal study note
+                  Add a new personal study note or generate from PDF
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -267,11 +260,21 @@ const SelfSpace = () => {
                   <Button className="w-full" onClick={handleSaveNote}>
                     Save Note
                   </Button>
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or
+                      </span>
+                    </div>
+                  </div>
+                  <PdfNotesUploader />
                 </div>
               </CardContent>
             </Card>
             
-            {/* Notes List */}
             <Card className="md:col-span-2 animate-fade-in">
               <CardHeader>
                 <CardTitle>Your Notes</CardTitle>
