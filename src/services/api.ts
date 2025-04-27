@@ -1,9 +1,11 @@
+import { getUserRole } from '@/lib/auth';
 
 const API_URL = 'http://localhost:8080/learnspace';
 
-export interface LoginCredentials {
+export interface LoginRequest {
   email: string;
   password: string;
+  role: string;
 }
 
 export interface SignupData {
@@ -35,26 +37,44 @@ export interface FileDTO {
 
 export const api = {
   auth: {
-    login: async (role: 'mentor' | 'learner', credentials: LoginCredentials) => {
+    login: async (role: 'mentor' | 'learner', credentials: LoginRequest) => {
       const response = await fetch(`${API_URL}/${role}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify({ ...credentials, role: role.toUpperCase() }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+      
       return response.json();
     },
     signup: async (role: 'mentor' | 'learner', data: SignupData) => {
       const response = await fetch(`${API_URL}/${role}/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, role: data.role.toUpperCase() }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Signup failed');
+      }
+      
       return response.json();
     },
-    logout: async (role: 'mentor' | 'learner') => {
+    logout: async () => {
+      const role = getUserRole();
+      if (!role) throw new Error('No user role found');
+      
       const response = await fetch(`${API_URL}/${role}/logout`, {
         method: 'POST',
       });
+      
+      if (!response.ok) {
+        throw new Error('Logout failed');
+      }
+      
       return response.json();
     },
   },

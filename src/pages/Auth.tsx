@@ -59,8 +59,11 @@ const Auth = () => {
       await api.auth.login(role, {
         email: loginValues.email,
         password: loginValues.password,
+        role: role.toUpperCase(),
       });
 
+      setUserRole(role);
+      
       toast({
         title: "Signed in successfully",
         description: "Welcome to Learnspace",
@@ -93,10 +96,10 @@ const Auth = () => {
         return;
       }
 
-      // Remove the confirmPassword field before sending the request
       const { confirmPassword, ...signupData } = signupValues;
       
       await api.auth.signup(role, signupData);
+      setUserRole(role);
 
       toast({
         title: "Account created successfully",
