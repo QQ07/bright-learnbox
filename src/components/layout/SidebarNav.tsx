@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -41,9 +40,9 @@ export const SidebarNav = () => {
   };
 
   return (
-    <div 
+    <div
       className={cn(
-        "h-full bg-sidebar min-h-screen border-r border-sidebar-border flex flex-col",
+        "fixed top-0 left-0 h-full bg-sidebar min-h-screen border-r border-sidebar-border flex flex-col",
         "transition-all duration-300 ease-in-out",
         expanded ? "w-64" : "w-20"
       )}
@@ -73,7 +72,7 @@ export const SidebarNav = () => {
       <Separator className="my-2" />
       
       {/* Navigation Links */}
-      <div className="flex-1 py-4">
+      <div className="flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
           <NavItem to="/self-space" icon={<Book />} label="Self Space" expanded={expanded} />
           <NavItem to="/classrooms" icon={<Layers />} label="Joined Classrooms" expanded={expanded} />

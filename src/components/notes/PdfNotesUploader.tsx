@@ -1,9 +1,10 @@
-
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { Upload, FileText, Loader } from 'lucide-react';
-import { saveTaskId, getTaskId, clearTaskId } from '@/utils/taskUtils';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { Upload, FileText, Loader } from "lucide-react";
+import { saveTaskId, getTaskId, clearTaskId } from "@/utils/taskUtils";
+import { getUserId } from "@/lib/auth"; // Import getUserId
 
 interface NotesData {
   Topic: Array<{
@@ -19,7 +20,54 @@ interface TaskResponse {
   result?: NotesData;
 }
 
-export const PdfNotesUploader = () => {
+interface PdfNotesUploaderProps {
+  onNotesGenerated: (
+    notes: Array<{ subTopic: string; summary: string }>
+  ) => void;
+}
+
+const saveNote = async (note: { subTopic: string; summary: string }) => {
+  const userId = getUserId(); // Retrieve userId from localStorage
+  if (!userId) {
+    console.error("User ID not found in localStorage");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:8080/learnspace/learner/notes?userId=${userId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "*/*",
+        },
+        body: JSON.stringify({
+          noteId: Date.now(), // Generate a unique noteId
+          title: note.subTopic,
+          subNotes: [
+            {
+              subTopic: note.subTopic,
+              summary: note.summary,
+            },
+          ],
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to save note: ${response.statusText}`);
+    }
+
+    console.log("Note saved successfully:", note);
+  } catch (error) {
+    console.error("Error saving note:", error);
+  }
+};
+
+export const PdfNotesUploader = ({
+  onNotesGenerated,
+}: PdfNotesUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const { toast } = useToast();
@@ -36,7 +84,7 @@ export const PdfNotesUploader = () => {
     if (!e.target.files || !e.target.files[0]) return;
 
     const file = e.target.files[0];
-    if (!file.type.includes('pdf')) {
+    if (!file.type.includes("pdf")) {
       toast({
         title: "Invalid file type",
         description: "Please upload a PDF file",
@@ -47,17 +95,20 @@ export const PdfNotesUploader = () => {
 
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('pdf_file', file);
+    formData.append("pdf_file", file);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/generate-notes-from-pdf', {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        "http://127.0.0.1:8000/generate-notes-from-pdf",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       const data: TaskResponse = await response.json();
       saveTaskId(data.task_id);
-      
+
       toast({
         title: "Processing PDF",
         description: data.message,
@@ -89,42 +140,38 @@ export const PdfNotesUploader = () => {
           clearInterval(pollInterval);
           setIsPolling(false);
           clearTaskId();
-          
-          // Create note format expected by the app
-          const noteContent = {
-            title: "PDF Generated Notes",
-            subNotes: data.result.Topic.map(topic => ({
-              subTopic: topic.Sub_topic,
-              summary: topic.summary,
-            }))
-          };
 
-          // Save note using existing saveNote function
-          // This assumes you have access to the saveNote function from parent
+          // Create note format expected by the app
+          const generatedNotes = data.result.Topic.map((topic) => ({
+            subTopic: topic.Sub_topic,
+            summary: topic.summary,
+          }));
+
+          // Save each note using the API
+          for (const note of generatedNotes) {
+            await saveNote(note);
+          }
+
+          // Pass generated notes to parent component
+          onNotesGenerated(generatedNotes);
+
           toast({
             title: "Notes generated",
             description: "PDF has been processed successfully",
           });
         }
-
-        attempts++;
-        if (attempts >= maxAttempts) {
-          clearInterval(pollInterval);
-          setIsPolling(false);
-          clearTaskId();
-          toast({
-            title: "Process timeout",
-            description: "PDF processing took too long",
-            variant: "destructive",
-          });
-        }
       } catch (error) {
+        console.error("Error polling task status:", error);
+      }
+
+      attempts++;
+      if (attempts >= maxAttempts) {
         clearInterval(pollInterval);
         setIsPolling(false);
         clearTaskId();
         toast({
-          title: "Error",
-          description: "Failed to check PDF processing status",
+          title: "Process timeout",
+          description: "PDF processing took too long",
           variant: "destructive",
         });
       }
@@ -154,8 +201,8 @@ export const PdfNotesUploader = () => {
           <p className="text-sm text-muted-foreground mb-2">
             Upload a PDF to generate notes
           </p>
-          <Button 
-            onClick={() => document.getElementById('pdf-upload')?.click()}
+          <Button
+            onClick={() => document.getElementById("pdf-upload")?.click()}
             className="gap-2"
           >
             <Upload className="h-4 w-4" />

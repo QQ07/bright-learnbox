@@ -15,7 +15,10 @@ const AppLayout = () => {
       <SidebarNav />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col p-6 md:p-8 animate-fade-in duration-300">
+      <div
+        className="flex-1 flex flex-col p-6 md:p-8 animate-fade-in duration-300"
+        style={{ marginLeft: "16rem" }}
+      >
         <main className="flex-1 max-w-6xl mx-auto w-full">
           <Outlet />
         </main>

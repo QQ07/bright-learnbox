@@ -1,25 +1,35 @@
-
-import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { ArrowRight, Mail, Lock, Phone, Calendar, User } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
-import { api, SignupData } from '@/services/api';
-import { setUserRole, setUserName, isLoggedIn } from '@/lib/auth';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { ArrowRight, Mail, Lock, Phone, Calendar, User } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { api, SignupData } from "@/services/api";
+import { setUserRole, setUserName, setUserId, isLoggedIn } from "@/lib/auth";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { format } from 'date-fns';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from "date-fns";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Extend SignupData for frontend validation purposes only
 interface ExtendedSignupData extends SignupData {
@@ -29,23 +39,23 @@ interface ExtendedSignupData extends SignupData {
 const Auth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(isLoggedIn());
   const [isLoading, setIsLoading] = useState(false);
-  const [role, setRole] = useState<'learner' | 'mentor'>('learner');
+  const [role, setRole] = useState<"learner" | "mentor">("learner");
   const [loginValues, setLoginValues] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
   const [signupValues, setSignupValues] = useState<ExtendedSignupData>({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    dob: format(new Date(), 'yyyy-MM-dd'),
-    gender: 'Other',
-    phone: '',
-    role: 'LEARNER',
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    dob: format(new Date(), "yyyy-MM-dd"),
+    gender: "Other",
+    phone: "",
+    role: "LEARNER",
   });
   const [date, setDate] = useState<Date>(new Date());
-  
+
   const { toast } = useToast();
 
   if (isAuthenticated) {
@@ -63,16 +73,16 @@ const Auth = () => {
         role: role.toUpperCase(),
       });
 
-      // Store user role and name in localStorage
+      // Store user role, name, and userId in localStorage
       setUserRole(role);
-      // Assume the response contains user information, if not we can use the email as fallback
-      setUserName(loginValues.email.split('@')[0]);
-      
+      setUserName(loginValues.email.split("@")[0]);
+      setUserId(response.userId); // Save userId from the API response
+
       toast({
         title: "Signed in successfully",
         description: "Welcome to Learnspace",
       });
-      
+
       setIsAuthenticated(true);
     } catch (error) {
       toast({
@@ -101,18 +111,19 @@ const Auth = () => {
       }
 
       const { confirmPassword, ...signupData } = signupValues;
-      
+
       const response = await api.auth.signup(role, signupData);
-      
-      // Store user role and name in localStorage
+
+      // Store user role, name, and userId in localStorage
       setUserRole(role);
       setUserName(signupValues.name);
+      setUserId(response.userId); // Save userId from the API response
 
       toast({
         title: "Account created successfully",
         description: "Welcome to Learnspace",
       });
-      
+
       setIsAuthenticated(true);
     } catch (error) {
       toast({
@@ -144,7 +155,7 @@ const Auth = () => {
       setDate(selectedDate);
       setSignupValues({
         ...signupValues,
-        dob: format(selectedDate, 'yyyy-MM-dd'),
+        dob: format(selectedDate, "yyyy-MM-dd"),
       });
     }
   };
@@ -152,7 +163,7 @@ const Auth = () => {
   const handleGenderChange = (selectedGender: string) => {
     setSignupValues({
       ...signupValues,
-      gender: selectedGender
+      gender: selectedGender,
     });
   };
 
@@ -163,8 +174,12 @@ const Auth = () => {
           <div className="bg-primary/20 w-16 h-16 rounded-xl flex items-center justify-center mx-auto mb-4">
             <span className="text-primary font-bold text-3xl">L</span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">Learnspace</h1>
-          <p className="text-muted-foreground">A better way to learn and teach</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">
+            Learnspace
+          </h1>
+          <p className="text-muted-foreground">
+            A better way to learn and teach
+          </p>
         </div>
 
         <Tabs defaultValue="signin" className="w-full">
@@ -172,13 +187,15 @@ const Auth = () => {
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
-          
+
           <Card className="animate-scale-in">
             <TabsContent value="signin">
               <form onSubmit={handleLoginSubmit}>
                 <CardHeader>
                   <CardTitle>Welcome Back</CardTitle>
-                  <CardDescription>Sign in to your Learnspace account</CardDescription>
+                  <CardDescription>
+                    Sign in to your Learnspace account
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -209,9 +226,14 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Select value={role} onValueChange={(value) => setRole(value as 'learner' | 'mentor')}>
+                    <Select
+                      value={role}
+                      onValueChange={(value) =>
+                        setRole(value as "learner" | "mentor")
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
@@ -221,24 +243,22 @@ const Auth = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Signing in..." : "Sign In"}
                     {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
                 </CardContent>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <form onSubmit={handleSignupSubmit}>
                 <CardHeader>
                   <CardTitle>Create an Account</CardTitle>
-                  <CardDescription>Sign up for a new Learnspace account</CardDescription>
+                  <CardDescription>
+                    Sign up for a new Learnspace account
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -295,7 +315,11 @@ const Auth = () => {
                         >
                           <div className="flex items-center">
                             <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                            {date ? format(date, "PPP") : <span>Pick a date</span>}
+                            {date ? (
+                              format(date, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
                           </div>
                           <Calendar className="h-4 w-4 opacity-50" />
                         </Button>
@@ -306,14 +330,19 @@ const Auth = () => {
                           selected={date}
                           onSelect={handleDateChange}
                           initialFocus
-                          disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                          disabled={(date) =>
+                            date > new Date() || date < new Date("1900-01-01")
+                          }
                         />
                       </PopoverContent>
                     </Popover>
                   </div>
 
                   <div className="space-y-2">
-                    <Select value={signupValues.gender} onValueChange={handleGenderChange}>
+                    <Select
+                      value={signupValues.gender}
+                      onValueChange={handleGenderChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
@@ -356,7 +385,12 @@ const Auth = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Select value={role} onValueChange={(value) => setRole(value as 'learner' | 'mentor')}>
+                    <Select
+                      value={role}
+                      onValueChange={(value) =>
+                        setRole(value as "learner" | "mentor")
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
@@ -367,11 +401,7 @@ const Auth = () => {
                     </Select>
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
+                  <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? "Creating Account..." : "Create Account"}
                     {!isLoading && <ArrowRight className="ml-2 h-4 w-4" />}
                   </Button>
@@ -380,9 +410,10 @@ const Auth = () => {
             </TabsContent>
           </Card>
         </Tabs>
-        
+
         <p className="text-center text-xs text-muted-foreground mt-8">
-          By continuing, you agree to Learnspace's Terms of Service and Privacy Policy
+          By continuing, you agree to Learnspace's Terms of Service and Privacy
+          Policy
         </p>
       </div>
     </div>

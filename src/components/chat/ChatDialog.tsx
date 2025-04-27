@@ -60,7 +60,6 @@ export const ChatDialog = ({ open, onOpenChange }: ChatDialogProps) => {
       const response = await axios.post("http://localhost:8000/chat", {
         conversation_id: conversationId,
         message: userMessage.content,
-        model: "gpt-4", // Specify the model name
         temperature: 0.7, // Adjust temperature as needed
       });
 
@@ -109,7 +108,7 @@ export const ChatDialog = ({ open, onOpenChange }: ChatDialogProps) => {
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-4 h-[400px]">
+        <ScrollArea className="flex-1 p-4 h-[400px] overflow-y-auto">
           <div className="space-y-4 pb-4">
             {messages.map((message) => (
               <ChatMessage
