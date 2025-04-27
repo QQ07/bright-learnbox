@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Mail, Lock, Phone, Calendar, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { api, SignupData } from '@/services/api';
-import { setUserRole } from '@/lib/auth';
+import { setUserRole, setUserName, isLoggedIn } from '@/lib/auth';
 import { 
   Select, 
   SelectContent, 
@@ -27,7 +27,7 @@ interface ExtendedSignupData extends SignupData {
 }
 
 const Auth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(isLoggedIn());
   const [isLoading, setIsLoading] = useState(false);
   const [role, setRole] = useState<'learner' | 'mentor'>('learner');
   const [loginValues, setLoginValues] = useState({
@@ -57,13 +57,16 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      await api.auth.login(role, {
+      const response = await api.auth.login(role, {
         email: loginValues.email,
         password: loginValues.password,
         role: role.toUpperCase(),
       });
 
+      // Store user role and name in localStorage
       setUserRole(role);
+      // Assume the response contains user information, if not we can use the email as fallback
+      setUserName(loginValues.email.split('@')[0]);
       
       toast({
         title: "Signed in successfully",
@@ -99,8 +102,11 @@ const Auth = () => {
 
       const { confirmPassword, ...signupData } = signupValues;
       
-      await api.auth.signup(role, signupData);
+      const response = await api.auth.signup(role, signupData);
+      
+      // Store user role and name in localStorage
       setUserRole(role);
+      setUserName(signupValues.name);
 
       toast({
         title: "Account created successfully",
@@ -141,14 +147,6 @@ const Auth = () => {
         dob: format(selectedDate, 'yyyy-MM-dd'),
       });
     }
-  };
-
-  const handleRoleChange = (selectedRole: 'learner' | 'mentor') => {
-    setRole(selectedRole);
-    setSignupValues({
-      ...signupValues,
-      role: selectedRole === 'learner' ? 'LEARNER' : 'MENTOR'
-    });
   };
 
   const handleGenderChange = (selectedGender: string) => {
@@ -358,7 +356,7 @@ const Auth = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Select value={role} onValueChange={(value) => handleRoleChange(value as 'learner' | 'mentor')}>
+                    <Select value={role} onValueChange={(value) => setRole(value as 'learner' | 'mentor')}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>

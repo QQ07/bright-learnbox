@@ -11,3 +11,20 @@ export const getUserRole = (): 'mentor' | 'learner' | null => {
 export const clearUserRole = () => {
   localStorage.removeItem('userRole');
 };
+
+export const setUserName = (name: string) => {
+  localStorage.setItem('userName', name);
+};
+
+export const getUserName = (): string | null => {
+  return localStorage.getItem('userName');
+};
+
+export const clearUserData = () => {
+  localStorage.removeItem('userRole');
+  localStorage.removeItem('userName');
+};
+
+export const isLoggedIn = (): boolean => {
+  return !!localStorage.getItem('userName');
+};

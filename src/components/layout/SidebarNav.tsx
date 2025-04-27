@@ -1,25 +1,43 @@
 
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Book, Layers, TestTube, ChevronRight, ChevronLeft, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/use-toast';
+import { getUserName, getUserRole, clearUserData } from '@/lib/auth';
+import { api } from '@/services/api';
 
 export const SidebarNav = () => {
   const [expanded, setExpanded] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  const userName = getUserName() || 'User';
+  const userRole = getUserRole() || 'learner';
   
   const toggleSidebar = () => setExpanded(!expanded);
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.auth.logout();
+    } catch (error) {
+      // Continue with logout even if API call fails
+      console.error('Logout API error:', error);
+    }
+    
+    // Clear user data from localStorage
+    clearUserData();
+    
     toast({
       title: "Logged out successfully",
       description: "You have been logged out of your account",
     });
-    // In a real app, this would handle actual logout logic
+    
+    // Redirect to login page
+    navigate('/', { replace: true });
   };
 
   return (
@@ -72,17 +90,17 @@ export const SidebarNav = () => {
           <Avatar className="h-10 w-10 border border-border">
             <AvatarImage src="" />
             <AvatarFallback className="bg-primary/20 text-primary font-medium">
-              JS
+              {userName.split(' ').map(name => name[0]).join('')}
             </AvatarFallback>
           </Avatar>
           
           {expanded && (
             <div className="flex flex-col">
               <span className="text-sm font-medium text-foreground truncate">
-                Jane Smith
+                {userName}
               </span>
-              <span className="text-xs text-muted-foreground">
-                Teacher
+              <span className="text-xs text-muted-foreground capitalize">
+                {userRole === 'mentor' ? 'Teacher' : 'Student'}
               </span>
             </div>
           )}
