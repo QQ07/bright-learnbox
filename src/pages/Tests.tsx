@@ -1,59 +1,93 @@
-
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Clock, CheckCircle, AlertTriangle, BarChart3, Plus, BrainCircuit } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import {
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  BarChart3,
+  Plus,
+  BrainCircuit,
+} from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { api } from "@/services/api";
+import { getUserId } from "@/lib/auth";
 
 // Mock data
 const mockQuizzes = [
-  { id: '1', title: 'Biology Cell Structure', questions: 10, completed: false, date: '2023-10-25' },
-  { id: '2', title: 'Physics Forces', questions: 15, completed: true, score: 85, date: '2023-10-20' },
-];
-
-const mockDailyQuestions = [
-  { 
-    id: '1', 
-    question: 'What is the powerhouse of the cell?', 
-    options: ['Nucleus', 'Mitochondria', 'Golgi Apparatus', 'Endoplasmic Reticulum'],
-    answer: 'Mitochondria',
-    submitted: false,
-    userAnswer: null
+  {
+    id: "1",
+    title: "Biology Cell Structure",
+    questions: 10,
+    completed: false,
+    date: "2023-10-25",
   },
-  { 
-    id: '2', 
-    question: 'Which of the following is NOT a state of matter?',
-    options: ['Solid', 'Liquid', 'Gas', 'Energy'],
-    answer: 'Energy',
-    submitted: false,
-    userAnswer: null
-  },
-  { 
-    id: '3', 
-    question: 'What is the Pythagorean theorem?',
-    options: ['a² + b² = c²', 'E = mc²', 'F = ma', 'PV = nRT'],
-    answer: 'a² + b² = c²',
-    submitted: false,
-    userAnswer: null
+  {
+    id: "2",
+    title: "Physics Forces",
+    questions: 15,
+    completed: true,
+    score: 85,
+    date: "2023-10-20",
   },
 ];
 
 const Tests = () => {
   const [quizzes, setQuizzes] = useState(mockQuizzes);
-  const [dailyQuestions, setDailyQuestions] = useState(mockDailyQuestions);
+  const [dailyQuestions, setDailyQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState<string | null>(null);
   const [quizProgress, setQuizProgress] = useState(0);
   const [quizResult, setQuizResult] = useState({ correct: 0, total: 0 });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  
+  const userId = getUserId();
+
+  useEffect(() => {
+    const fetchDailyQuestions = async () => {
+      try {
+        const questions = await api.questions.getDailyQuestions(userId);
+
+        // Transform API response to match the dailyQuestions structure
+        const formattedQuestions = questions.map((q: any) => ({
+          question: q.questionText,
+          options: [q.option1, q.option2, q.option3, q.option4],
+          answer: q.correctOption,
+          submitted: false,
+          userAnswer: null,
+        }));
+
+        setDailyQuestions(formattedQuestions);
+      } catch (error) {
+        console.error("Error fetching daily questions:", error);
+      }
+    };
+
+    fetchDailyQuestions();
+  }, [userId]);
+
   const handleAnswerSubmit = () => {
     if (!userAnswer) {
       toast({
@@ -63,72 +97,78 @@ const Tests = () => {
       });
       return;
     }
-    
+
     // Update the current question with user's answer
     const updatedQuestions = [...dailyQuestions];
     updatedQuestions[currentQuestionIndex].submitted = true;
     updatedQuestions[currentQuestionIndex].userAnswer = userAnswer;
     setDailyQuestions(updatedQuestions);
-    
+
     // Check if answer is correct for the results
-    const isCorrect = userAnswer === dailyQuestions[currentQuestionIndex].answer;
-    setQuizResult(prev => ({
+    const isCorrect =
+      userAnswer === dailyQuestions[currentQuestionIndex].answer;
+    setQuizResult((prev) => ({
       correct: isCorrect ? prev.correct + 1 : prev.correct,
-      total: prev.total + 1
+      total: prev.total + 1,
     }));
-    
+
     // Move to next question or finish quiz
     if (currentQuestionIndex < dailyQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentQuestionIndex((prev) => prev + 1);
       setUserAnswer(null);
-      setQuizProgress(Math.round(((currentQuestionIndex + 1) / dailyQuestions.length) * 100));
+      setQuizProgress(
+        Math.round(((currentQuestionIndex + 1) / dailyQuestions.length) * 100)
+      );
     } else {
       // Completed all questions
       setQuizProgress(100);
       setTimeout(() => {
         toast({
           title: "Daily questions completed",
-          description: `You got ${quizResult.correct + (isCorrect ? 1 : 0)} out of ${dailyQuestions.length} correct!`,
+          description: `You got ${
+            quizResult.correct + (isCorrect ? 1 : 0)
+          } out of ${dailyQuestions.length} correct!`,
         });
       }, 500);
     }
   };
-  
+
   const handleCreateQuiz = () => {
     setIsDialogOpen(false);
-    
+
     // Create a new quiz (in a real app, this would navigate to a quiz creation page)
     const newQuiz = {
       id: Date.now().toString(),
       title: "New Custom Quiz",
       questions: 0,
       completed: false,
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split("T")[0],
     };
-    
+
     setQuizzes([newQuiz, ...quizzes]);
-    
+
     toast({
       title: "Quiz created",
-      description: "Your new quiz has been created. Add questions to get started.",
+      description:
+        "Your new quiz has been created. Add questions to get started.",
     });
   };
-  
+
   const restartQuiz = () => {
     // Reset the quiz state
     setCurrentQuestionIndex(0);
     setUserAnswer(null);
     setQuizProgress(0);
     setQuizResult({ correct: 0, total: 0 });
-    
+
     // Reset all questions to unsubmitted
-    const resetQuestions = dailyQuestions.map(q => ({
+    const resetQuestions = dailyQuestions.map((q) => ({
       ...q,
       submitted: false,
-      userAnswer: null
+      userAnswer: null,
     }));
     setDailyQuestions(resetQuestions);
-    
+
     toast({
       title: "Quiz restarted",
       description: "You can now attempt the daily questions again",
@@ -137,7 +177,7 @@ const Tests = () => {
 
   const currentQuestion = dailyQuestions[currentQuestionIndex];
   const isQuizComplete = quizProgress === 100;
-  
+
   return (
     <div className="space-y-6">
       <header>
@@ -146,13 +186,13 @@ const Tests = () => {
           Practice with quizzes and daily questions
         </p>
       </header>
-      
+
       <Tabs defaultValue="daily" className="mt-6">
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="daily">Daily Questions</TabsTrigger>
           <TabsTrigger value="quizzes">My Quizzes</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="daily" className="animate-fade-in">
           <div className="grid grid-cols-1 gap-6">
             <Card className="animate-fade-in">
@@ -164,10 +204,11 @@ const Tests = () => {
                       Daily Practice
                     </CardTitle>
                     <CardDescription>
-                      {isQuizComplete 
-                        ? `You scored ${quizResult.correct} out of ${dailyQuestions.length}` 
-                        : `Question ${currentQuestionIndex + 1} of ${dailyQuestions.length}`
-                      }
+                      {isQuizComplete
+                        ? `You scored ${quizResult.correct} out of ${dailyQuestions.length}`
+                        : `Question ${currentQuestionIndex + 1} of ${
+                            dailyQuestions.length
+                          }`}
                     </CardDescription>
                   </div>
                   {isQuizComplete && (
@@ -178,7 +219,7 @@ const Tests = () => {
                 </div>
                 <Progress value={quizProgress} className="h-2" />
               </CardHeader>
-              
+
               <CardContent>
                 {isQuizComplete ? (
                   // Quiz results
@@ -187,31 +228,52 @@ const Tests = () => {
                       <CheckCircle className="h-10 w-10 text-green-600" />
                     </div>
                     <h2 className="text-2xl font-bold">
-                      {quizResult.correct === dailyQuestions.length 
-                        ? "Perfect Score!" 
-                        : quizResult.correct > dailyQuestions.length / 2 
-                          ? "Good Job!" 
-                          : "Keep Practicing!"
-                      }
+                      {quizResult.correct === dailyQuestions.length
+                        ? "Perfect Score!"
+                        : quizResult.correct > dailyQuestions.length / 2
+                        ? "Good Job!"
+                        : "Keep Practicing!"}
                     </h2>
                     <p className="text-muted-foreground">
-                      You got {quizResult.correct} out of {dailyQuestions.length} questions correct
+                      You got {quizResult.correct} out of{" "}
+                      {dailyQuestions.length} questions correct
                     </p>
                     <div className="pt-4">
-                      <h3 className="font-medium text-left mb-2">Question Summary:</h3>
+                      <h3 className="font-medium text-left mb-2">
+                        Question Summary:
+                      </h3>
                       <div className="space-y-2">
                         {dailyQuestions.map((q, idx) => (
-                          <div key={q.id} className="flex items-start border p-3 rounded-lg">
-                            <div className={`flex-shrink-0 rounded-full p-1 ${q.userAnswer === q.answer ? 'bg-green-100' : 'bg-red-100'}`}>
-                              {q.userAnswer === q.answer 
-                                ? <CheckCircle className="h-5 w-5 text-green-600" /> 
-                                : <AlertTriangle className="h-5 w-5 text-red-600" />
-                              }
+                          <div
+                            key={idx}
+                            className="flex items-start border p-3 rounded-lg"
+                          >
+                            <div
+                              className={`flex-shrink-0 rounded-full p-1 ${
+                                q.userAnswer === q.answer
+                                  ? "bg-green-100"
+                                  : "bg-red-100"
+                              }`}
+                            >
+                              {q.userAnswer === q.answer ? (
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              ) : (
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                              )}
                             </div>
                             <div className="ml-3">
-                              <p className="text-sm font-medium">{q.question}</p>
+                              <p className="text-sm font-medium">
+                                {q.question}
+                              </p>
                               <p className="text-xs text-muted-foreground mt-1">
-                                Your answer: <span className={q.userAnswer === q.answer ? 'text-green-600' : 'text-red-600'}>
+                                Your answer:{" "}
+                                <span
+                                  className={
+                                    q.userAnswer === q.answer
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }
+                                >
                                   {q.userAnswer || "None"}
                                 </span>
                               </p>
@@ -226,19 +288,28 @@ const Tests = () => {
                       </div>
                     </div>
                   </div>
-                ) : (
+                ) : dailyQuestions.length > 0 ? (
                   // Quiz question
                   <div className="space-y-6">
                     <div className="space-y-2">
                       <h2 className="text-xl font-medium">
                         {currentQuestion.question}
                       </h2>
-                      <RadioGroup value={userAnswer || ""} onValueChange={setUserAnswer}>
+                      <RadioGroup
+                        value={userAnswer || ""}
+                        onValueChange={setUserAnswer}
+                      >
                         <div className="space-y-3 pt-3">
-                          {currentQuestion.options.map((option) => (
-                            <div key={option} className="flex items-center space-x-2">
+                          {currentQuestion.options.map((option, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center space-x-2"
+                            >
                               <RadioGroupItem value={option} id={option} />
-                              <Label htmlFor={option} className="cursor-pointer flex-1 p-3 rounded-lg hover:bg-muted">
+                              <Label
+                                htmlFor={option}
+                                className="cursor-pointer flex-1 p-3 rounded-lg hover:bg-muted"
+                              >
                                 {option}
                               </Label>
                             </div>
@@ -247,24 +318,33 @@ const Tests = () => {
                       </RadioGroup>
                     </div>
                   </div>
+                ) : (
+                  // Loading state
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">
+                      Loading questions...
+                    </p>
+                  </div>
                 )}
               </CardContent>
-              
+
               {!isQuizComplete && (
                 <CardFooter>
-                  <Button 
-                    onClick={handleAnswerSubmit} 
+                  <Button
+                    onClick={handleAnswerSubmit}
                     disabled={!userAnswer}
                     className="w-full"
                   >
-                    {currentQuestionIndex < dailyQuestions.length - 1 ? "Next Question" : "Finish Quiz"}
+                    {currentQuestionIndex < dailyQuestions.length - 1
+                      ? "Next Question"
+                      : "Finish Quiz"}
                   </Button>
                 </CardFooter>
               )}
             </Card>
           </div>
         </TabsContent>
-        
+
         <TabsContent value="quizzes" className="animate-fade-in">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Create Quiz Card */}
@@ -290,7 +370,7 @@ const Tests = () => {
                         Create a personalized quiz from your study materials.
                       </DialogDescription>
                     </DialogHeader>
-                    
+
                     <div className="space-y-4 py-4">
                       <div className="space-y-2">
                         <p className="text-sm font-medium">Quiz Type:</p>
@@ -306,26 +386,28 @@ const Tests = () => {
                         </RadioGroup>
                       </div>
                     </div>
-                    
+
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                      >
                         Cancel
                       </Button>
-                      <Button onClick={handleCreateQuiz}>
-                        Continue
-                      </Button>
+                      <Button onClick={handleCreateQuiz}>Continue</Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardContent>
             </Card>
-            
+
             {/* Quiz List */}
             <Card className="md:col-span-2 animate-fade-in">
               <CardHeader>
                 <CardTitle>Your Quizzes</CardTitle>
                 <CardDescription>
-                  {quizzes.length} {quizzes.length === 1 ? 'quiz' : 'quizzes'} available
+                  {quizzes.length} {quizzes.length === 1 ? "quiz" : "quizzes"}{" "}
+                  available
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -340,10 +422,15 @@ const Tests = () => {
                 ) : (
                   <div className="space-y-4">
                     {quizzes.map((quiz) => (
-                      <Card key={quiz.id} className="hover:shadow-md transition-shadow border">
+                      <Card
+                        key={quiz.id}
+                        className="hover:shadow-md transition-shadow border"
+                      >
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-start">
-                            <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                            <CardTitle className="text-lg">
+                              {quiz.title}
+                            </CardTitle>
                             {quiz.completed ? (
                               <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
                                 {quiz.score}%
@@ -363,7 +450,10 @@ const Tests = () => {
                           </p>
                         </CardContent>
                         <CardFooter>
-                          <Button variant="ghost" className="w-full text-primary">
+                          <Button
+                            variant="ghost"
+                            className="w-full text-primary"
+                          >
                             {quiz.completed ? "Review Quiz" : "Start Quiz"}
                           </Button>
                         </CardFooter>
