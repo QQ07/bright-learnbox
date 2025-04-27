@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowRight, Mail, Lock, Phone, Calendar, User } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { api, SignupData } from '@/services/api';
+import { setUserRole } from '@/lib/auth';
 import { 
   Select, 
   SelectContent, 
