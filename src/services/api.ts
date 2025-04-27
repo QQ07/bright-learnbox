@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { getUserRole } from '@/lib/auth';
 
 const API_URL = 'http://localhost:8080/learnspace';
