@@ -189,7 +189,7 @@ export const api = {
   questions: {
     getDailyQuestions: async (userId: string) => {
       const response = await fetch(
-        `${API_URL}/learner/questions/due-today?userId=${userId}`,
+        `${API_URL}/learner/questions/dueToday?userId=${userId}`,
         {
           method: "GET",
           credentials: "include", // Ensures cookies like JSESSIONID are sent
