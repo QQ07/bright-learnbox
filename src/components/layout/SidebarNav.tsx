@@ -75,7 +75,7 @@ export const SidebarNav = () => {
       <div className="flex-1 py-4 overflow-y-auto">
         <nav className="space-y-1 px-2">
           <NavItem to="/self-space" icon={<Book />} label="Self Space" expanded={expanded} />
-          <NavItem to="/classrooms" icon={<Layers />} label="Joined Classrooms" expanded={expanded} />
+          <NavItem to="/classrooms" icon={<Layers />} label="Classrooms" expanded={expanded} />
           <NavItem to="/tests" icon={<TestTube />} label="Tests" expanded={expanded} />
         </nav>
       </div>

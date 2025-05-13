@@ -9,108 +9,53 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Plus, Users, FolderPlus } from "lucide-react";
+import { FolderPlus, FileText, Plus, Users } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { api } from "@/services/api";
+import {
+  createClassroom,
+  getClassrooms,
+  joinClassroom,
+} from "@/services/apiService";
 
 // Define TypeScript interfaces for our classroom types
-interface TeacherClassroom {
-  id: string;
-  name: string;
-  code: string;
-  students: number;
-  materials: number;
+interface MentorClassroom {
+  classroomId: number;
+  classroomName: string;
+  classroomCode: string;
+  fileNames: string[];
+  learnerEmails: string[];
 }
-
-interface StudentClassroom {
-  id: string;
-  name: string;
-  code: string;
-  teacher: string;
-  materials: number;
-}
-
-// Mock data
-const mockTeacherClassrooms: TeacherClassroom[] = [
-  { id: "1", name: "Biology 101", code: "BIO101", students: 24, materials: 8 },
-  {
-    id: "2",
-    name: "Physics Advanced",
-    code: "PHY202",
-    students: 18,
-    materials: 12,
-  },
-];
-
-const mockStudentClassrooms: StudentClassroom[] = [
-  {
-    id: "1",
-    name: "Chemistry Basics",
-    code: "CHEM101",
-    teacher: "Dr. Smith",
-    materials: 5,
-  },
-  {
-    id: "2",
-    name: "Mathematics 101",
-    code: "MATH101",
-    teacher: "Prof. Johnson",
-    materials: 7,
-  },
-];
 
 const Classrooms = () => {
   const [isTeacher, setIsTeacher] = useState(() => {
     const role = localStorage.getItem("userRole");
     return role === "mentor";
   }); // Initialize based on localStorage value
-  const [classrooms, setClassrooms] = useState<
-    TeacherClassroom[] | StudentClassroom[]
-  >([]);
+  const [classrooms, setClassrooms] = useState<MentorClassroom[]>([]);
   const [newClassroom, setNewClassroom] = useState({ name: "" });
   const [joinCode, setJoinCode] = useState("");
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchClassrooms = async () => {
-      try {
-        const classroomsData = await api.classroom.getAll(
-          isTeacher ? "mentor" : "learner"
-        );
-        setClassrooms(
-          classroomsData as TeacherClassroom[] | StudentClassroom[]
-        );
-      } catch (error) {
-        console.error("Failed to fetch classrooms:", error);
-        toast({
-          title: "Failed to fetch classrooms",
-          description:
-            "There was an error fetching your classrooms. Please try again later.",
-          variant: "destructive",
-        });
-      }
-    };
+  const fetchClassrooms = async () => {
+    try {
+      const userId = parseInt(localStorage.getItem("userId") || "0", 10);
+      const classroomsData = await getClassrooms(userId);
+      setClassrooms(classroomsData);
+    } catch (error) {
+      console.error("Failed to fetch classrooms:", error);
+      toast({
+        title: "Failed to fetch classrooms",
+        description:
+          "There was an error fetching your classrooms. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  };
 
+  useEffect(() => {
     fetchClassrooms();
   }, [isTeacher]);
-
-  // // Toggle role for demo purposes
-  // const toggleRole = () => {
-  //   setIsTeacher(!isTeacher);
-  //   setClassrooms([]);
-  // };
 
   const handleCreateClassroom = async () => {
     if (!newClassroom.name.trim()) {
@@ -123,9 +68,8 @@ const Classrooms = () => {
     }
 
     try {
-      await api.classroom.create(newClassroom.name);
-      const updatedClassrooms = await api.classroom.getAll("mentor");
-      setClassrooms(updatedClassrooms as TeacherClassroom[]);
+      await createClassroom(newClassroom.name);
+      fetchClassrooms();
       setNewClassroom({ name: "" });
 
       toast({
@@ -133,6 +77,7 @@ const Classrooms = () => {
         description: `Your new classroom "${newClassroom.name}" has been created`,
       });
     } catch (error) {
+      console.error("Error creating classroom:", error);
       toast({
         title: "Error creating classroom",
         description: "Please try again later",
@@ -152,9 +97,9 @@ const Classrooms = () => {
     }
 
     try {
-      await api.classroom.join(joinCode);
-      const updatedClassrooms = await api.classroom.getAll("learner");
-      setClassrooms(updatedClassrooms as StudentClassroom[]);
+      const userId = parseInt(localStorage.getItem("userId") || "0", 10);
+      await joinClassroom(userId, joinCode);
+      fetchClassrooms();
       setJoinCode("");
 
       toast({
@@ -162,6 +107,7 @@ const Classrooms = () => {
         description: "You have successfully joined the classroom",
       });
     } catch (error) {
+      console.error("Error joining classroom:", error);
       toast({
         title: "Error joining classroom",
         description: "Please check the classroom code and try again",
@@ -181,11 +127,6 @@ const Classrooms = () => {
               : "Join and access your classrooms"}
           </p>
         </div>
-
-        {/* Demo toggle - would be user role based in real app
-        <Button variant="outline" onClick={toggleRole}>
-          Switch to {isTeacher ? 'Student' : 'Teacher'} View
-        </Button> */}
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -204,15 +145,13 @@ const Classrooms = () => {
           <CardContent>
             {isTeacher ? (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Classroom name"
-                    value={newClassroom.name}
-                    onChange={(e) =>
-                      setNewClassroom({ ...newClassroom, name: e.target.value })
-                    }
-                  />
-                </div>
+                <Input
+                  placeholder="Classroom name"
+                  value={newClassroom.name}
+                  onChange={(e) =>
+                    setNewClassroom({ ...newClassroom, name: e.target.value })
+                  }
+                />
                 <Button className="w-full" onClick={handleCreateClassroom}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Classroom
@@ -220,13 +159,11 @@ const Classrooms = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Input
-                    placeholder="Enter classroom code"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
-                  />
-                </div>
+                <Input
+                  placeholder="Enter classroom code"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                />
                 <Button className="w-full" onClick={handleJoinClassroom}>
                   <Plus className="mr-2 h-4 w-4" />
                   Join Classroom
@@ -260,39 +197,25 @@ const Classrooms = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {classrooms.map((classroom) => (
                   <Card
-                    key={classroom.id}
+                    key={classroom.classroomId}
                     className="hover:shadow-md transition-shadow border-2"
                   >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-lg">
-                          {classroom.name}
+                          {classroom.classroomName}
                         </CardTitle>
-                        <Badge>{classroom.code}</Badge>
+                        <Badge>{classroom.classroomCode}</Badge>
                       </div>
                       <CardDescription>
-                        {isTeacher
-                          ? `${
-                              (classroom as TeacherClassroom).students
-                            } students enrolled`
-                          : `Teacher: ${
-                              (classroom as StudentClassroom).teacher
-                            }`}
+                        {classroom.learnerEmails.length} learners enrolled
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="pb-2">
                       <div className="flex items-center text-sm text-muted-foreground">
                         <FileText className="mr-1 h-4 w-4" />
-                        <span>{classroom.materials} learning materials</span>
+                        <span>{classroom.fileNames.length} files uploaded</span>
                       </div>
-                      {isTeacher && (
-                        <div className="flex items-center text-sm text-muted-foreground mt-1">
-                          <Users className="mr-1 h-4 w-4" />
-                          <span>
-                            {(classroom as TeacherClassroom).students} students
-                          </span>
-                        </div>
-                      )}
                     </CardContent>
                     <CardFooter>
                       <Button variant="ghost" className="w-full text-primary">
