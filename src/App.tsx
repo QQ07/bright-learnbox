@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { isLoggedIn } from "./lib/auth";
+
 import AppLayout from "./components/layout/AppLayout";
 import Auth from "./pages/Auth";
 import SelfSpace from "./pages/SelfSpace";
@@ -16,10 +16,6 @@ const queryClient = new QueryClient();
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  if (!isLoggedIn()) {
-    return <Navigate to="/" replace />;
-  }
-  
   return <>{children}</>;
 };
 
